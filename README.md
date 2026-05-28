@@ -589,7 +589,7 @@ chore: upgrade dépendances
 - [ ] `.env.example` complet avec toutes les variables
 - [ ] `README.md` avec instructions setup claires
 - [ ] `bitbucket-pipelines.yml` initial (build + test)
-- [ ] Premier pipeline vert ✅ sur Bitbucket
+- [ ] Premier pipeline sur Bitbucket
 
 ### Sprint 2 — Authentification
 
