@@ -671,7 +671,7 @@ chore: upgrade dépendances
 
 ---
 
->  **Bon apprentissage !** Ce projet te donnera une base solide pour développer des applications Laravel professionnelles, du code local jusqu'au déploiement en production avec CI/CD complet.
+> !** Ce projet te donnera une base solide pour développer des applications Laravel professionnelles, du code local jusqu'au déploiement en production avec CI/CD complet.
 
 ---
 
