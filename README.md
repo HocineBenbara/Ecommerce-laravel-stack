@@ -1,6 +1,6 @@
 # E-Commerce Laravel — Stack Technologique Complète
 
-> Guide de référence pour projet d'apprentissage · Laravel 11 · PHP 8.3+ · Docker · TailwindCSS · Livewire  
+> Guide de référence pour projet d'apprentissage · Laravel 11 · PHP 8.3+ · Docker · TailwindCSS · Livewire
 > **Version 2.0 — 2026**
 
 ---
@@ -9,17 +9,24 @@
 
 1. [Vue d'Ensemble](#1-vue-densemble)
 2. [Stack Technologique](#2-stack-technologique)
-3. [Fichiers de Configuration](#3-fichiers-de-configuration)
-4. [Structure de Base de Données](#4-structure-de-base-de-données)
-5. [Pipeline CI/CD](#5-pipeline-cicd)
-6. [Sécurité](#6-sécurité)
-7. [Stratégie de Tests](#7-stratégie-de-tests)
-8. [Performance & Optimisation](#8-performance--optimisation)
-9. [Monitoring & Logs](#9-monitoring--logs)
-10. [Workflow de Développement](#10-workflow-de-développement)
-11. [Checklist de Démarrage](#11-checklist-de-démarrage)
-12. [Objectifs d'Apprentissage](#12-objectifs-dapprentissage)
-13. [Ressources](#13-ressources)
+3. [Gestion des Produits & Panel Admin](#3-gestion-des-produits--panel-admin)
+4. [Rôles, Permissions & Cycle de Vie](#4-rôles-permissions--cycle-de-vie)
+5. [Fichiers de Configuration & Structure](#5-fichiers-de-configuration--structure)
+6. [Structure de Base de Données](#6-structure-de-base-de-données)
+7. [Jobs, Queues & Événements](#7-jobs-queues--événements)
+8. [Endpoints API](#8-endpoints-api)
+9. [Gestion du Stock](#9-gestion-du-stock)
+10. [Webhooks Stripe](#10-webhooks-stripe)
+11. [Sécurité & Gestion des Erreurs](#11-sécurité--gestion-des-erreurs)
+12. [Pipeline CI/CD](#12-pipeline-cicd)
+13. [Stratégie de Tests](#13-stratégie-de-tests)
+14. [Performance & Optimisation](#14-performance--optimisation)
+15. [SEO & Sitemap](#15-seo--sitemap)
+16. [Monitoring & Logs](#16-monitoring--logs)
+17. [Workflow de Développement](#17-workflow-de-développement)
+18. [Checklist de Démarrage](#18-checklist-de-démarrage)
+19. [Objectifs d'Apprentissage](#19-objectifs-dapprentissage)
+20. [Ressources](#20-ressources)
 
 ---
 
@@ -27,7 +34,7 @@
 
 Ce projet simule une application e-commerce complète en environnement professionnel. Chaque décision technique vise à couvrir un maximum de concepts modernes du développement web Laravel.
 
-> **Objectif :** Apprendre Laravel 11 de A à Z, du développement local au déploiement en production, avec CI/CD, qualité de code et sécurité.
+> **Objectif :** Apprendre Laravel 11 de A à Z — développement local, CI/CD, qualité de code, sécurité, déploiement production.
 
 ### Architecture Générale
 
@@ -61,6 +68,9 @@ Ce projet simule une application e-commerce complète en environnement professio
 | Laravel Fortify | dernière | 2FA TOTP |
 | Laravel Horizon | dernière | Dashboard monitoring queues Redis |
 | Laravel Telescope | dernière | Debug & observabilité (dev only) |
+| Intervention Image | 3.x | Traitement et resize d'images |
+| spatie/laravel-seo | dernière | Meta tags SEO dynamiques |
+| spatie/laravel-sitemap | dernière | Génération sitemap XML |
 
 ### 2.2 Frontend
 
@@ -74,29 +84,7 @@ Ce projet simule une application e-commerce complète en environnement professio
 | Heroicons | 2.x | Icônes SVG |
 | FilamentPHP | 3.x | Panel d'administration |
 
-### 2.3 Base de Données & ORM
-
-| Aspect | Choix | Notes |
-|--------|-------|-------|
-| SGBD principal | MySQL 8.0+ | Compatible PlanetScale / Neon |
-| SGBD alternatif | PostgreSQL 15+ | Recommandé pour production |
-| ORM | Eloquent | Relations, scopes, casts |
-| Migrations | Laravel Migrations | Versionning schéma DB |
-| Seeders | Factories + Faker | Données de démo réalistes |
-| Soft Deletes | SoftDeletes trait | Sur `users`, `products`, `orders` |
-| Indexes | Explicites dans migrations | Sur `slug`, `email`, `order_number` |
-
-> **Important :** Toujours ajouter des indexes sur les colonnes fréquemment filtrées (`slug`, `status`, `user_id`). Utiliser `->index()` ou `->unique()` dans les migrations.
-
-### 2.4 Cache, Sessions & Queues
-
-- **Cache driver :** Redis (route, config, view, application cache)
-- **Sessions :** Redis ou Database selon l'environnement
-- **Queue driver :** Redis avec Laravel Horizon pour monitoring
-- **Scheduler :** Laravel Scheduler via cron dans Docker
-- **Events/Listeners :** `order.placed`, `payment.confirmed`, `stock.low`
-
-### 2.5 Paiement
+### 2.3 Paiement
 
 | Solution | Package | Usage |
 |----------|---------|-------|
@@ -104,83 +92,392 @@ Ce projet simule une application e-commerce complète en environnement professio
 | PayPal | srmklive/laravel-paypal | Optionnel |
 | Mollie | mollie/laravel-mollie | Europe / iDEAL |
 
->  Toujours développer en mode Sandbox/Test. Ne jamais committer de clés Stripe en clair — utiliser `.env` et les secrets CI/CD.
+> Toujours développer en mode Sandbox/Test. Ne jamais committer de clés en clair — utiliser `.env` et secrets CI/CD.
 
-### 2.6 Emails & Notifications
+### 2.4 Emails & Notifications
 
 | Contexte | Outil |
 |----------|-------|
-| Développement | Mailpit (interface web locale) |
+| Développement | Mailpit (interface web port 8025) |
 | Staging | Mailtrap |
-| Production | Brevo (Sendinblue) / Mailgun / SES |
+| Production | Brevo / Mailgun / SES |
 | Notifications | Laravel Notifications (email, database, Slack) |
 
-### 2.7 Recherche
+### 2.5 Recherche & Stockage
 
-- **Basique :** Eloquent `where`/`like` avec scopes
-- **Avancée :** Laravel Scout + Meilisearch ou Algolia
-- **Full-text :** MySQL Full-Text Index sur `name`, `description`
-
-### 2.8 Stockage Fichiers
-
-- **Local (dev) :** Laravel Storage — disk `local` et `public`
-- **Cloud (prod) :** AWS S3 / Cloudinary / DigitalOcean Spaces
-- **Traitement images :** Intervention Image (resize, WebP, optimisation)
-
-### 2.9 Admin Panel
-
-- **Solution recommandée :** FilamentPHP 3.x
-- Alternatives : Nova (payant), Backpack, Custom Livewire
+- **Recherche basique :** Eloquent `where`/`like` avec scopes
+- **Recherche avancée :** Laravel Scout + Meilisearch ou Algolia
+- **Stockage local (dev) :** Laravel Storage — disk `local` et `public`
+- **Stockage cloud (prod) :** AWS S3 / Cloudinary / DigitalOcean Spaces
 
 ---
 
-## 3. Fichiers de Configuration
+## 3. Gestion des Produits & Panel Admin
 
-### 3.1 Docker
+> **Principe fondamental :** Tu ne modifies JAMAIS le code pour ajouter un produit, changer un prix ou modifier un stock. Tout passe par une interface d'administration.
 
-```
-docker/
-├── Dockerfile          # PHP 8.3-fpm + extensions + Composer
-├── nginx.conf          # Config Nginx pour Laravel
-├── php.ini             # upload_max, memory_limit, opcache
-└── supervisord.conf    # Queue worker + scheduler process
-docker-compose.yml      # Orchestration services
-.dockerignore           # Exclusions build (vendor/, node_modules/)
-```
+### 3.1 Les 3 Approches Possibles
 
-**Services Docker Compose :**
+####  Option 1 — FilamentPHP (recommandée)
 
-| Service | Image | Port |
-|---------|-------|------|
-| app | php:8.3-fpm (custom) | — |
-| nginx | nginx:alpine | 80 |
-| mysql | mysql:8.0 | 3306 |
-| redis | redis:alpine | 6379 |
-| mailpit | axllent/mailpit | 8025 |
+Package qui génère automatiquement toute l'interface admin à partir de tes modèles.
 
-### 3.2 Laravel
+```bash
+# Installation
+composer require filament/filament
+php artisan filament:install --panels
+php artisan make:filament-user   # Créer le premier admin
 
-```
-.env.example            # Template variables (committé)
-.env                    # Config locale (gitignored)
-.env.staging            # Config staging (secrets via CI)
-.env.production         # Config production (secrets via vault)
-composer.json           # Dépendances PHP
-package.json            # Dépendances JS
-vite.config.js          # Config Vite + HMR + Livewire plugin
-tailwind.config.js      # Thème + purge CSS + plugins
-phpunit.xml             # Config tests (coverage, suites)
-routes/api.php          # Routes API versionnées /api/v1/
-routes/web.php          # Routes web avec middleware auth
+# Générer les ressources CRUD
+php artisan make:filament-resource Product --generate
+php artisan make:filament-resource Category --generate
+php artisan make:filament-resource Order --generate
+php artisan make:filament-resource Coupon --generate
 ```
 
-> **Nouveau v2 :** Versionner les routes API dès le début — préfixer avec `/api/v1/` pour éviter une migration douloureuse plus tard.
+Accès : `http://localhost/admin`
 
-### 3.3 CI/CD & Qualité
+Ce que génère `make:filament-resource Product --generate` automatiquement :
+- Formulaire **Créer un produit** (tous les champs, upload images, sélecteur catégorie)
+- **Liste des produits** avec recherche, filtres, tri par colonne, pagination
+- Formulaire **Modifier** (prix, stock, statut, description...)
+- Bouton **Supprimer** avec confirmation (soft delete)
+- **Actions en masse** (activer/désactiver plusieurs produits)
+
+#### Option 2 — CRUD Custom avec Livewire
+
+Pour les cas où FilamentPHP ne convient pas ou pour l'apprentissage approfondi :
+
+```
+resources/views/admin/products/
+├── index.blade.php     # Liste + recherche + filtres Livewire
+├── create.blade.php    # Formulaire création
+└── edit.blade.php      # Formulaire modification
+app/Livewire/Admin/
+├── ProductTable.php    # Composant liste avec recherche temps réel
+└── ProductForm.php     # Composant formulaire réactif
+```
+
+#### Option 3 — API REST + Frontend séparé
+
+Pour une app mobile ou un frontend React/Vue :
+
+```
+POST   /api/v1/admin/products           # Créer un produit
+PUT    /api/v1/admin/products/{id}      # Modifier un produit
+DELETE /api/v1/admin/products/{id}      # Supprimer (soft delete)
+PATCH  /api/v1/admin/products/{id}/stock # Mettre à jour le stock uniquement
+PATCH  /api/v1/admin/products/{id}/price # Mettre à jour le prix uniquement
+```
+
+### 3.2 Ce que tu gères SANS toucher au code
+
+| Action | Via le panel | Code modifié ? |
+|--------|-------------|----------------|
+| Ajouter un produit | Formulaire "Créer" |  Non |
+| Modifier le prix | Champ éditable |  Non |
+| Modifier le stock | Champ numérique |  Non |
+| Changer le statut (actif/inactif) | Toggle |  Non |
+| Supprimer un produit | Bouton + soft delete |  Non |
+| Restaurer un produit supprimé | Onglet corbeille |  Non |
+| Ajouter des images | Dropzone upload |  Non |
+| Créer une catégorie | Formulaire catégories |  Non |
+| Appliquer un coupon | CRUD coupons |  Non |
+| Changer le statut d'une commande | Sélecteur statut |  Non |
+| Gérer les utilisateurs | CRUD users + rôles |  Non |
+| Voir les statistiques | Dashboard Filament |  Non |
+| Exporter les commandes | Action export CSV |  Non |
+
+### 3.3 Quand faut-il modifier le code ?
+
+Uniquement pour des **nouvelles fonctionnalités structurelles** :
+
+| Cas | Action requise |
+|-----|---------------|
+| Ajouter une colonne `weight` à `products` | Migration + champ Filament |
+| Nouveau type de produit (digital) | Migration + logique métier |
+| Nouvelle règle de calcul des taxes | Modification du Service |
+| Nouvelle passerelle de paiement | Package + intégration |
+| Nouveau type de notification | Classe Notification + listener |
+
+### 3.4 Soft Deletes en Pratique
+
+Les produits, commandes et utilisateurs utilisent `SoftDeletes` — ils ne sont **jamais vraiment supprimés** de la base de données.
+
+```php
+// Dans le Model
+use Illuminate\Database\Eloquent\SoftDeletes;
+class Product extends Model {
+    use SoftDeletes;
+}
+
+// Comportement
+$product->delete();          // Remplit deleted_at — invisible partout
+$product->restore();         // Annule la suppression
+$product->forceDelete();     // Suppression définitive
+Product::withTrashed()->get(); // Inclure les supprimés
+Product::onlyTrashed()->get(); // Seulement les supprimés (corbeille)
+```
+
+Dans Filament, un onglet "Corbeille" apparaît automatiquement pour restaurer les éléments.
+
+---
+
+## 4. Rôles, Permissions & Cycle de Vie
+
+### 4.1 Rôles Définis
+
+| Rôle | Accès | Créé par |
+|------|-------|----------|
+| `super-admin` | Tout sans restriction | Seeder initial |
+| `admin` | Panel admin complet | Super-admin |
+| `manager` | Produits + commandes (pas users) | Admin |
+| `customer` | Boutique + son compte + ses commandes | Auto à l'inscription |
+
+### 4.2 Permissions Détaillées
+
+```php
+// Seeder RolesAndPermissionsSeeder
+$permissions = [
+    // Produits
+    'view-products', 'create-products', 'edit-products',
+    'delete-products', 'restore-products',
+
+    // Commandes
+    'view-orders', 'edit-orders', 'cancel-orders', 'refund-orders',
+
+    // Utilisateurs
+    'view-users', 'create-users', 'edit-users', 'delete-users',
+    'assign-roles',
+
+    // Catalogue
+    'manage-categories', 'manage-tags', 'manage-attributes',
+
+    // Marketing
+    'manage-coupons', 'manage-reviews',
+
+    // Rapports
+    'view-reports', 'export-data',
+
+    // Système
+    'view-logs', 'manage-settings',
+];
+
+// Attribution aux rôles
+$admin->givePermissionTo($permissions);          // Tout
+$manager->givePermissionTo([
+    'view-products', 'edit-products',
+    'view-orders', 'edit-orders', 'cancel-orders',
+    'manage-categories', 'view-reports',
+]);
+$customer->givePermissionTo([]);                 // Aucune permission admin
+```
+
+### 4.3 Protection des Routes
+
+```php
+// Middleware sur les routes admin
+Route::middleware(['auth', 'role:admin|manager'])
+    ->prefix('admin')
+    ->group(function () {
+        Route::resource('products', ProductController::class);
+        Route::resource('orders', OrderController::class);
+    });
+
+// Vérification dans les controllers
+public function destroy(Product $product) {
+    $this->authorize('delete-products'); // Lance 403 si non autorisé
+    $product->delete();
+}
+```
+
+### 4.4 Cycle de Vie d'une Commande
+
+```
+[Client passe commande]
+        ↓
+   PENDING (en attente de paiement)
+        ↓ paiement confirmé
+   PROCESSING (en cours de préparation)
+        ↓ préparée par admin
+   SHIPPED (expédiée — email + tracking envoyés)
+        ↓ livrée
+   DELIVERED (confirmée livrée)
+        ↓ optionnel
+   COMPLETED (avis client possible)
+
+Chemins alternatifs :
+   PENDING     → CANCELLED (timeout paiement ou client annule)
+   PROCESSING  → CANCELLED (admin annule — remboursement auto)
+   SHIPPED     → REFUNDED (retour produit accepté)
+   DELIVERED   → REFUNDED (litige résolu en faveur client)
+```
+
+| Statut | Déclenché par | Notification client |
+|--------|--------------|---------------------|
+| `pending` | Création commande |  Email confirmation |
+| `processing` | Paiement confirmé |  Email "en préparation" |
+| `shipped` | Admin + numéro tracking |  Email + SMS tracking |
+| `delivered` | Admin ou webhook transporteur |  Email + demande avis |
+| `cancelled` | Client ou admin |  Email + remboursement |
+| `refunded` | Admin après retour |  Email confirmation remboursement |
+
+---
+
+## 5. Fichiers de Configuration & Structure
+
+### 5.1 Arborescence du Projet Laravel
+
+```
+app/
+├── Console/
+│   └── Commands/           # Commandes Artisan custom
+│       ├── SendLowStockAlerts.php
+│       └── CleanExpiredCarts.php
+├── Events/
+│   ├── OrderPlaced.php
+│   ├── PaymentConfirmed.php
+│   └── StockLow.php
+├── Exceptions/
+│   └── Handler.php         # Gestion centralisée des erreurs
+├── Http/
+│   ├── Controllers/
+│   │   ├── Auth/           # Breeze controllers
+│   │   ├── Admin/          # Controllers admin (si custom)
+│   │   ├── Api/V1/         # Controllers API versionnés
+│   │   │   ├── ProductController.php
+│   │   │   ├── CartController.php
+│   │   │   └── OrderController.php
+│   │   ├── CartController.php
+│   │   ├── CheckoutController.php
+│   │   ├── OrderController.php
+│   │   └── ProductController.php
+│   ├── Middleware/
+│   │   ├── SecurityHeaders.php   # X-Frame, CSP, etc.
+│   │   └── CheckCartOwnership.php
+│   └── Requests/           # Form Requests — validation
+│       ├── StoreProductRequest.php
+│       ├── StoreOrderRequest.php
+│       └── CheckoutRequest.php
+├── Jobs/
+│   ├── SendOrderConfirmationEmail.php
+│   ├── SendShippingNotification.php
+│   ├── ProcessStripeWebhook.php
+│   └── UpdateProductStock.php
+├── Listeners/
+│   ├── SendOrderConfirmation.php
+│   ├── DecrementProductStock.php
+│   └── SendLowStockAlert.php
+├── Mail/
+│   ├── OrderConfirmed.php
+│   ├── OrderShipped.php
+│   └── OrderCancelled.php
+├── Models/
+│   ├── User.php
+│   ├── Product.php
+│   ├── Category.php
+│   ├── Order.php
+│   ├── OrderItem.php
+│   ├── Cart.php
+│   ├── CartItem.php
+│   ├── Payment.php
+│   ├── Coupon.php
+│   └── Review.php
+├── Notifications/
+│   ├── OrderStatusChanged.php
+│   └── LowStockAlert.php
+├── Observers/
+│   └── OrderObserver.php   # Déclenche events sur changement statut
+├── Policies/
+│   ├── ProductPolicy.php
+│   └── OrderPolicy.php
+├── Providers/
+│   ├── AppServiceProvider.php
+│   └── EventServiceProvider.php
+└── Services/               # Logique métier extraite
+    ├── CartService.php
+    ├── OrderService.php
+    ├── PaymentService.php
+    └── StockService.php
+```
+
+### 5.2 Variables `.env` Complètes
+
+```ini
+# Application
+APP_NAME="Mon E-Commerce"
+APP_ENV=local                    # local | staging | production
+APP_KEY=base64:...               # php artisan key:generate
+APP_DEBUG=true                   # false en production !
+APP_URL=http://localhost
+
+# Base de données
+DB_CONNECTION=mysql
+DB_HOST=mysql                    # Nom service Docker
+DB_PORT=3306
+DB_DATABASE=ecommerce
+DB_USERNAME=root
+DB_PASSWORD=secret
+
+# Cache & Sessions
+CACHE_STORE=redis
+SESSION_DRIVER=redis
+SESSION_LIFETIME=120
+QUEUE_CONNECTION=redis
+
+# Redis
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=null
+
+# Emails
+MAIL_MAILER=smtp
+MAIL_HOST=mailpit                # mailpit en dev
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_FROM_ADDRESS="noreply@shop.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+# Stripe
+STRIPE_KEY=pk_test_...
+STRIPE_SECRET=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# AWS S3 (si cloud storage)
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=eu-west-1
+AWS_BUCKET=mon-ecommerce-bucket
+
+# Sentry (optionnel)
+SENTRY_LARAVEL_DSN=https://...
+
+# Filament Admin
+FILAMENT_FILESYSTEM_DISK=public
+
+# Socialite (OAuth)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
+```
+
+### 5.3 Services Docker Compose
+
+| Service | Image | Port | Rôle |
+|---------|-------|------|------|
+| app | php:8.3-fpm (custom) | — | Application PHP |
+| nginx | nginx:alpine | 80 | Serveur web |
+| mysql | mysql:8.0 | 3306 | Base de données |
+| redis | redis:alpine | 6379 | Cache + Queue |
+| mailpit | axllent/mailpit | 8025 | Emails (dev) |
+| meilisearch | getmeili/meilisearch | 7700 | Recherche (optionnel) |
+
+### 5.4 Fichiers CI/CD & Qualité
 
 ```
 bitbucket-pipelines.yml     # Pipeline CI/CD complet
-sonar-project.properties    # Config SonarQube (exclusions, gate)
+sonar-project.properties    # Config SonarQube
 phpstan.neon                # Analyse statique niveau 6+
 pint.json                   # Style de code (preset: laravel)
 .gitignore                  # Exclusions Git standard Laravel
@@ -192,143 +489,395 @@ LICENSE                     # MIT recommandé
 
 ---
 
-## 4. Structure de Base de Données
+## 6. Structure de Base de Données
 
-### 4.1 Utilisateurs & Authentification
+### 6.1 Utilisateurs & Authentification
 
 ```sql
 users
-  id, name, email, password, role, avatar, phone,
+  id, name, email, password, avatar, phone,
   email_verified_at, remember_token,
   deleted_at (SoftDeletes), timestamps
 
-password_reset_tokens
-  email, token, created_at
-
-personal_access_tokens          -- Sanctum
-  tokenable_type, tokenable_id, name, token,
-  abilities, last_used_at, expires_at, timestamps
-
-roles                           -- Spatie Permission
-  id, name, guard_name, timestamps
-
-permissions                     -- Spatie Permission
-  id, name, guard_name, timestamps
-
-model_has_roles                 -- Pivot
-  role_id, model_type, model_id
-
-model_has_permissions           -- Pivot
-  permission_id, model_type, model_id
+password_reset_tokens       email, token, created_at
+personal_access_tokens      tokenable, name, token, abilities, expires_at
+roles                       id, name, guard_name
+permissions                 id, name, guard_name
+model_has_roles             role_id, model_type, model_id
+model_has_permissions       permission_id, model_type, model_id
 ```
 
-### 4.2 Produits & Catalogue
+### 6.2 Produits & Catalogue
 
 ```sql
 categories
-  id, name, slug (unique, index), parent_id (FK self),
-  description, image, sort_order, is_active, timestamps
+  id, name, slug (unique), parent_id (self-join),
+  description, image, sort_order, is_active
 
 products
-  id, category_id (FK), name, slug (unique, index),
-  description, price, compare_price, stock, sku (unique, index),
-  status (index), featured, meta_title, meta_description,
-  deleted_at (SoftDeletes), timestamps
+  id, category_id, name, slug (unique), description,
+  price, compare_price, stock, sku (unique),
+  status (active|inactive|draft), featured,
+  meta_title, meta_description,
+  deleted_at (SoftDeletes)
 
-product_images
-  id, product_id (FK), path, alt_text, is_primary, sort_order, timestamps
-
-attributes
-  id, name, type (select|color|size), timestamps
-
-attribute_values
-  id, attribute_id (FK), value, color_code, timestamps
-
-product_attribute                -- Variantes produit
-  product_id, attribute_value_id,
-  stock_override, price_override
-
-tags
-  id, name, slug (unique), timestamps
-
-product_tag                     -- Pivot
-  product_id, tag_id
+product_images      id, product_id, path, alt_text, is_primary, sort_order
+attributes          id, name, type (select|color|size)
+attribute_values    id, attribute_id, value, color_code
+product_attribute   product_id, attribute_value_id, stock_override, price_override
+tags                id, name, slug (unique)
+product_tag         product_id, tag_id
 ```
 
-> **Nouveau v2 :** `compare_price` pour le prix barré, `stock_override`/`price_override` sur les variantes pour gérer les différences par taille/couleur.
-
-### 4.3 Panier & Commandes
+### 6.3 Panier & Commandes
 
 ```sql
-carts
-  id, user_id (FK, nullable), session_id (index),
-  expires_at, timestamps
-
-cart_items
-  id, cart_id (FK), product_id (FK), attribute_value_id (FK nullable),
-  quantity, price (snapshotté), timestamps
+carts       id, user_id (nullable), session_id (index), expires_at
+cart_items  id, cart_id, product_id, attribute_value_id, quantity, price
 
 orders
-  id, user_id (FK), order_number (unique, index),
-  status (index), subtotal, tax, discount, shipping, total,
-  currency, payment_method, payment_status,
+  id, user_id, order_number (unique), status, subtotal, tax,
+  discount, shipping, total, currency, payment_method, payment_status,
   notes, shipping_address (json), billing_address (json),
-  deleted_at (SoftDeletes), timestamps
+  deleted_at (SoftDeletes)
 
-order_items
-  id, order_id (FK), product_id (FK),
-  name, sku, quantity, price, total, options_json
-
-order_status_history
-  id, order_id (FK), status, comment,
-  is_customer_notified, user_id (FK), created_at
+order_items          id, order_id, product_id, name, sku, quantity, price, total, options_json
+order_status_history id, order_id, status, comment, is_customer_notified, user_id
 ```
 
-### 4.4 Paiement & Livraison
+### 6.4 Paiement, Livraison & Marketing
 
 ```sql
-payments
-  id, order_id (FK), transaction_id (index), gateway,
-  amount, currency, status, method, metadata_json, paid_at, timestamps
+payments    id, order_id, transaction_id, gateway, amount, currency,
+            status, method, metadata_json, paid_at
 
-shipments
-  id, order_id (FK), carrier, tracking_number,
-  tracking_url, status, shipped_at, delivered_at, timestamps
+shipments   id, order_id, carrier, tracking_number, tracking_url,
+            status, shipped_at, delivered_at
+
+reviews     id, user_id, product_id, rating (1-5), title, comment,
+            status (pending|approved|rejected), verified_purchase
+
+wishlists   id, user_id, product_id  -- UNIQUE(user_id, product_id)
+
+coupons     id, code (unique), type (percent|fixed|free_shipping),
+            value, min_purchase, max_uses, uses_count,
+            valid_from, valid_until, is_active
 ```
 
-### 4.5 Interactions & Marketing
+### 6.5 Système Laravel (natif)
 
 ```sql
-reviews
-  id, user_id (FK), product_id (FK), rating (1-5),
-  title, comment, status (pending|approved|rejected),
-  verified_purchase, timestamps
-
-wishlists
-  id, user_id (FK), product_id (FK), timestamps
-  UNIQUE(user_id, product_id)
-
-coupons
-  id, code (unique), type (percent|fixed|free_shipping),
-  value, min_purchase, max_uses, uses_count,
-  valid_from, valid_until, is_active, timestamps
-```
-
-### 4.6 Système (Laravel natif)
-
-```sql
-notifications       -- Laravel Notifications
-failed_jobs         -- Queue failed jobs
-job_batches         -- Laravel Bus batches
-cache               -- Cache driver database
-sessions            -- Session driver database
+notifications       notifiable_type, notifiable_id, type, data, read_at
+failed_jobs         uuid, connection, queue, payload, exception, failed_at
+job_batches         id, name, total_jobs, pending_jobs, failed_jobs
+cache               key, value, expiration
+sessions            id, user_id, ip_address, user_agent, payload, last_activity
 ```
 
 ---
 
-## 5. Pipeline CI/CD
+## 7. Jobs, Queues & Événements
 
-### 5.1 Étapes du Pipeline
+### 7.1 Événements & Listeners
+
+| Événement | Listener | Action |
+|-----------|----------|--------|
+| `OrderPlaced` | `SendOrderConfirmation` | Email confirmation au client |
+| `OrderPlaced` | `DecrementProductStock` | Décrémente le stock |
+| `OrderPlaced` | `CreatePaymentRecord` | Enregistre l'intent de paiement |
+| `PaymentConfirmed` | `UpdateOrderStatus` | Passe commande en `processing` |
+| `PaymentConfirmed` | `SendProcessingNotification` | Email "en préparation" |
+| `OrderShipped` | `SendShippingNotification` | Email + SMS avec tracking |
+| `OrderCancelled` | `RestoreProductStock` | Remet le stock |
+| `OrderCancelled` | `InitiateRefund` | Remboursement Stripe auto |
+| `StockLow` | `NotifyAdmins` | Alerte email à l'équipe admin |
+| `ReviewSubmitted` | `NotifyAdminForModeration` | Alerte modération |
+
+### 7.2 Jobs en Queue (asynchrones)
+
+```php
+// Tous ces jobs sont traités en arrière-plan via Redis
+
+SendOrderConfirmationEmail::dispatch($order)->onQueue('emails');
+SendShippingNotification::dispatch($order, $tracking)->onQueue('emails');
+ProcessStripeWebhook::dispatch($payload)->onQueue('payments');
+UpdateProductStock::dispatch($product, $quantity)->onQueue('default');
+SendLowStockAlert::dispatch($product)->onQueue('notifications');
+GenerateSitemapXml::dispatch()->onQueue('low-priority');
+ResizeProductImage::dispatch($imagePath)->onQueue('media');
+```
+
+### 7.3 Tâches Planifiées (Scheduler)
+
+```php
+// app/Console/Kernel.php
+protected function schedule(Schedule $schedule): void {
+    // Nettoyer les paniers expirés (tous les jours à 2h)
+    $schedule->command('carts:clean-expired')->dailyAt('02:00');
+
+    // Alertes stock bas (chaque matin à 8h)
+    $schedule->command('stock:send-alerts')->dailyAt('08:00');
+
+    // Générer le sitemap (chaque nuit à 3h)
+    $schedule->command('sitemap:generate')->dailyAt('03:00');
+
+    // Nettoyer les tokens expirés Sanctum (hebdomadaire)
+    $schedule->command('sanctum:prune-expired')->weekly();
+
+    // Backup base de données (quotidien)
+    $schedule->command('backup:run')->dailyAt('01:00');
+}
+```
+
+---
+
+## 8. Endpoints API
+
+> Toutes les routes API sont préfixées `/api/v1/` et retournent du JSON.
+
+### 8.1 Authentification
+
+```
+POST   /api/v1/auth/register          # Inscription
+POST   /api/v1/auth/login             # Connexion → token Sanctum
+POST   /api/v1/auth/logout            # Déconnexion (auth requise)
+POST   /api/v1/auth/refresh           # Rafraîchir le token
+POST   /api/v1/auth/forgot-password   # Envoi email reset
+POST   /api/v1/auth/reset-password    # Reset avec token
+```
+
+### 8.2 Catalogue (Public)
+
+```
+GET    /api/v1/products               # Liste paginée + filtres
+GET    /api/v1/products/{slug}        # Détail produit
+GET    /api/v1/categories             # Arbre des catégories
+GET    /api/v1/categories/{slug}/products  # Produits par catégorie
+GET    /api/v1/search?q=              # Recherche produits
+```
+
+### 8.3 Panier (Auth optionnel)
+
+```
+GET    /api/v1/cart                   # Voir le panier
+POST   /api/v1/cart/items             # Ajouter un produit
+PATCH  /api/v1/cart/items/{id}        # Modifier la quantité
+DELETE /api/v1/cart/items/{id}        # Retirer un produit
+POST   /api/v1/cart/coupon            # Appliquer un coupon
+DELETE /api/v1/cart/coupon            # Retirer le coupon
+```
+
+### 8.4 Commandes (Auth requis)
+
+```
+GET    /api/v1/orders                 # Mes commandes
+GET    /api/v1/orders/{number}        # Détail commande
+POST   /api/v1/orders                 # Passer une commande (checkout)
+POST   /api/v1/orders/{id}/cancel     # Annuler (si pending/processing)
+```
+
+### 8.5 Compte Client (Auth requis)
+
+```
+GET    /api/v1/profile                # Mon profil
+PUT    /api/v1/profile                # Modifier mes infos
+PUT    /api/v1/profile/password       # Changer mot de passe
+GET    /api/v1/wishlist               # Ma wishlist
+POST   /api/v1/wishlist/{productId}   # Ajouter à la wishlist
+DELETE /api/v1/wishlist/{productId}   # Retirer de la wishlist
+POST   /api/v1/reviews                # Soumettre un avis
+```
+
+### 8.6 Admin (Auth + Rôle admin)
+
+```
+GET    /api/v1/admin/products         # Liste avec filtres avancés
+POST   /api/v1/admin/products         # Créer
+PUT    /api/v1/admin/products/{id}    # Modifier
+DELETE /api/v1/admin/products/{id}    # Supprimer (soft delete)
+PATCH  /api/v1/admin/products/{id}/restore  # Restaurer
+PATCH  /api/v1/admin/products/{id}/stock    # Modifier stock seul
+GET    /api/v1/admin/orders           # Toutes les commandes
+PATCH  /api/v1/admin/orders/{id}/status     # Changer statut
+GET    /api/v1/admin/reports/sales    # Rapport ventes
+```
+
+---
+
+## 9. Gestion du Stock
+
+### 9.1 Mécanisme Automatique
+
+Le stock est géré automatiquement via les événements — tu n'as jamais à le gérer manuellement depuis le code lors d'une commande.
+
+```php
+// Décrément automatique à la confirmation paiement
+class DecrementProductStock {
+    public function handle(PaymentConfirmed $event): void {
+        foreach ($event->order->items as $item) {
+            $item->product->decrement('stock', $item->quantity);
+
+            // Déclencher alerte si stock bas (< seuil)
+            if ($item->product->stock <= config('shop.low_stock_threshold', 5)) {
+                event(new StockLow($item->product));
+            }
+        }
+    }
+}
+
+// Restoration automatique si commande annulée
+class RestoreProductStock {
+    public function handle(OrderCancelled $event): void {
+        foreach ($event->order->items as $item) {
+            $item->product->increment('stock', $item->quantity);
+        }
+    }
+}
+```
+
+### 9.2 Modification Manuelle via le Panel
+
+Dans FilamentPHP, le champ stock est directement modifiable :
+- Sur la fiche produit (modification complète)
+- Via une action rapide inline dans la liste ("Ajuster le stock")
+- Import CSV pour mise à jour en masse
+
+### 9.3 Alertes Stock Bas
+
+```php
+// config/shop.php
+'low_stock_threshold' => 5,   // Alerte si stock <= 5
+'out_of_stock_behavior' => 'hide',  // hide | show_unavailable
+```
+
+Comportements configurables :
+- **`hide`** : le produit disparaît de la boutique quand stock = 0
+- **`show_unavailable`** : le produit reste visible avec bouton "Indisponible"
+- **Backorder** : accepter les commandes même à stock 0
+
+---
+
+## 10. Webhooks Stripe
+
+### 10.1 Pourquoi les Webhooks ?
+
+Stripe notifie ton application des événements de paiement en temps réel. Sans webhook, tu ne saurais jamais si un paiement a vraiment abouti.
+
+```
+Client paye → Stripe traite → Stripe appelle ton webhook → Tu mets à jour la commande
+```
+
+### 10.2 Événements Stripe à Écouter
+
+| Événement Stripe | Action dans l'app |
+|-----------------|-------------------|
+| `payment_intent.succeeded` | Commande → `processing`, décrémenter stock |
+| `payment_intent.payment_failed` | Commande → `cancelled`, notifier client |
+| `charge.refunded` | Commande → `refunded`, notifier client |
+| `customer.subscription.created` | Activer abonnement (si applicable) |
+| `invoice.payment_succeeded` | Renouvellement abonnement |
+
+### 10.3 Implémentation Laravel Cashier
+
+```php
+// routes/web.php
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
+
+// app/Http/Controllers/StripeWebhookController.php
+use Laravel\Cashier\Http\Controllers\WebhookController;
+
+class StripeWebhookController extends WebhookController {
+    public function handlePaymentIntentSucceeded(array $payload): Response {
+        $paymentIntentId = $payload['data']['object']['id'];
+        $order = Order::where('stripe_payment_intent', $paymentIntentId)->first();
+        $order?->markAsPaid(); // Met à jour statut + déclenche événements
+        return $this->successMethod();
+    }
+}
+```
+
+### 10.4 Test des Webhooks en Local
+
+```bash
+# Installer Stripe CLI
+stripe listen --forward-to localhost/stripe/webhook
+
+# Simuler un paiement réussi
+stripe trigger payment_intent.succeeded
+
+# Simuler un remboursement
+stripe trigger charge.refunded
+```
+
+---
+
+## 11. Sécurité & Gestion des Erreurs
+
+### 11.1 Protections Intégrées Laravel
+
+| Menace | Protection | Configuration |
+|--------|------------|---------------|
+| CSRF | Token auto-injecté | `VerifyCsrfToken` middleware |
+| XSS | Blade `{{ }}` escaping | Utiliser `{!! !!}` uniquement si nécessaire |
+| SQL Injection | Eloquent PDO binding | Éviter `DB::raw()` sans binding |
+| Mass Assignment | `$fillable` sur models | Définir explicitement |
+| Rate Limiting | Laravel Rate Limiter | Login : 5/min, API : 60/min |
+| CORS | Laravel CORS config | Restreindre origins en production |
+
+### 11.2 Bonnes Pratiques
+
+- HTTPS via Let's Encrypt (Nginx + Certbot) en production
+- Headers : `X-Frame-Options`, `X-Content-Type-Options`, CSP
+- 2FA TOTP via Laravel Fortify pour les comptes admin
+- Rate limiting spécifique : `/login`, `/register`, `/api/v1/checkout`
+- `APP_DEBUG=false` et `APP_ENV=production` obligatoires en prod
+- Validation via **Form Requests** dédiées sur toutes les requêtes
+
+### 11.3 Gestion Centralisée des Erreurs
+
+```php
+// app/Exceptions/Handler.php
+public function register(): void {
+    // Erreur 404 — page produit introuvable
+    $this->renderable(function (ModelNotFoundException $e, Request $request) {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Ressource introuvable'], 404);
+        }
+        return response()->view('errors.404', [], 404);
+    });
+
+    // Erreur 403 — accès refusé
+    $this->renderable(function (AuthorizationException $e, Request $request) {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Accès refusé'], 403);
+        }
+        return response()->view('errors.403', [], 403);
+    });
+
+    // Erreur validation — retour JSON pour l'API
+    $this->renderable(function (ValidationException $e, Request $request) {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Données invalides',
+                'errors'  => $e->errors(),
+            ], 422);
+        }
+    });
+
+    // Envoyer les erreurs critiques à Sentry
+    $this->reportable(function (Throwable $e) {
+        if (app()->bound('sentry')) {
+            app('sentry')->captureException($e);
+        }
+    });
+}
+```
+
+---
+
+## 12. Pipeline CI/CD
+
+### 12.1 Étapes du Pipeline
 
 | Étape | Actions | Déclencheur |
 |-------|---------|-------------|
@@ -336,40 +885,35 @@ sessions            -- Session driver database
 | 2. Static Analysis | PHPStan niveau 6, Laravel Pint | Tout push / PR |
 | 3. SonarQube | Qualité, coverage, duplication | Tout push / PR |
 | 4. Quality Gate | Bloquer si KO (coverage < 70%) | Après SonarQube |
-| 5. Docker Build | Image multi-stage, tag avec commit SHA | Merge main/develop |
-| 6. Push Registry | Azure Container Registry ou Docker Hub | Merge main/develop |
+| 5. Docker Build | Image multi-stage, tag SHA | Merge main/develop |
+| 6. Push Registry | Azure Container Registry / Docker Hub | Merge main/develop |
 | 7. Deploy Staging | SSH + migrate + cache clear | Merge develop (auto) |
-| 8. Deploy Prod | SSH + migrate + cache clear + health check | Merge main (manuel) |
+| 8. Deploy Prod | SSH + migrate + optimize + health check | Merge main (manuel) |
 
-> **Nouveau v2 :** Le déploiement en production doit être **manuel** (trigger Bitbucket) pour éviter les accidents.
+> Le déploiement production doit être **déclenché manuellement** dans Bitbucket pour éviter tout accident.
 
-### 5.2 Stratégie de Branches
+### 12.2 Stratégie de Branches
 
 | Branche | Environnement | Pipeline |
 |---------|---------------|----------|
-| `feature/*` | Local uniquement | Tests + Analyse (pas de deploy) |
-| `develop` | Staging | Pipeline complet + deploy staging auto |
+| `feature/*` | Local | Tests + Analyse (pas de deploy) |
+| `develop` | Staging | Pipeline complet + deploy auto |
 | `release/*` | Staging | Tests de régression + validation QA |
-| `main` | Production | Pipeline complet + deploy prod manuel |
-| `hotfix/*` | Production | Pipeline accéléré + deploy prod urgent |
+| `main` | Production | Pipeline complet + deploy manuel |
+| `hotfix/*` | Production | Pipeline accéléré + deploy urgent |
 
-### 5.3 Variables CI/CD (Bitbucket Secrets)
+### 12.3 Variables CI/CD Bitbucket Secrets
 
 ```bash
-APP_KEY             # Clé Laravel chiffrée
-DB_PASSWORD         # Mot de passe base de données
-STRIPE_SECRET       # Clé Stripe (test en staging, live en prod)
-SONAR_TOKEN         # Token authentification SonarQube
-DOCKER_USER         # Credentials registry
-DOCKER_PASS         # Credentials registry
-DEPLOY_SSH_KEY      # Clé SSH pour déploiement
-SENTRY_DSN          # Tracking erreurs production
+APP_KEY, DB_PASSWORD, STRIPE_SECRET, STRIPE_WEBHOOK_SECRET,
+SONAR_TOKEN, DOCKER_USER, DOCKER_PASS,
+DEPLOY_SSH_KEY, DEPLOY_HOST, SENTRY_DSN
 ```
 
-### 5.4 SonarQube — Quality Gate
+### 12.4 SonarQube — Quality Gate
 
-| Métrique | Seuil Minimum |
-|----------|---------------|
+| Métrique | Seuil |
+|----------|-------|
 | Code Coverage | ≥ 70% |
 | Duplicated Lines | ≤ 3% |
 | Bugs critiques | 0 |
@@ -378,65 +922,44 @@ SENTRY_DSN          # Tracking erreurs production
 
 ---
 
-## 6. Sécurité
+## 13. Stratégie de Tests
 
-### 6.1 Protections Intégrées Laravel
+### 13.1 Pyramide de Tests
 
-| Menace | Protection | Configuration |
-|--------|------------|---------------|
-| CSRF | Token Laravel auto-injecté | `VerifyCsrfToken` middleware |
-| XSS | Blade `{{ }}` escaping auto | Utiliser `{!! !!}` uniquement si nécessaire |
-| SQL Injection | Eloquent PDO binding | Éviter `DB::raw()` sans binding |
-| Mass Assignment | `fillable` / `guarded` sur models | Définir `$fillable` explicitement |
-| Rate Limiting | Laravel Rate Limiter | Login : 5/min, API : 60/min |
-| CORS | Laravel CORS config | Restreindre origins en production |
-
-### 6.2 Bonnes Pratiques Additionnelles
-
-- Activer HTTPS via Let's Encrypt (Nginx + Certbot) en production
-- Headers de sécurité : `X-Frame-Options`, `X-Content-Type`, CSP via middleware
-- 2FA TOTP avec Laravel Fortify pour tous les comptes admin
-- Audit log : journaliser les actions sensibles (paiements, changements de rôles)
-- Validation stricte : toutes les requêtes via **Form Requests** dédiées
-- Rate limiting spécifique sur `/login`, `/register`, `/api/v1/checkout`
-- `APP_DEBUG=false` et `APP_ENV=production` obligatoires en prod
-
----
-
-## 7. Stratégie de Tests
-
-### 7.1 Pyramide de Tests
-
-| Type | Framework | Couverture cible | Exemples |
-|------|-----------|-----------------|----------|
+| Type | Framework | Couverture | Exemples |
+|------|-----------|-----------|----------|
 | Tests Unitaires | Pest / PHPUnit | 80%+ | Models, Services, Helpers |
 | Tests Feature | Laravel Testing | 70%+ | Controllers, API endpoints |
 | Tests E2E | Laravel Dusk | Parcours critiques | Checkout, Login, Panier |
 | Analyse Statique | PHPStan niveau 6 | 0 erreur | Types, null safety |
 | Code Style | Laravel Pint | 0 violation | PSR-12 + preset Laravel |
 
-### 7.2 Tests Prioritaires
+### 13.2 Tests Prioritaires
 
-- **Auth :** login, register, reset password, 2FA, permissions par rôle
-- **Panier :** ajout produit, modification quantité, suppression, calcul totaux, coupon
-- **Commandes :** création, transitions de statut, annulation, remboursement
-- **Paiement Stripe :** webhook processing, succès, échec, remboursement
-- **Rôles :** accès admin vs client vs invité sur chaque route
-- **API :** tous les endpoints `/api/v1/` avec et sans token
+- **Auth :** login, register, reset, 2FA, permissions par rôle
+- **Produits :** CRUD admin, upload image, soft delete, restauration
+- **Stock :** décrémentation commande, restauration annulation, alerte seuil
+- **Panier :** ajout, modification quantité, suppression, coupon, calcul total
+- **Commandes :** création, transitions statut, annulation, remboursement
+- **Webhooks :** Stripe payment succeeded, failed, refunded
+- **API :** tous les endpoints avec et sans token, validation erreurs
 
-> Utiliser SQLite en mémoire (`:memory:`) pour les tests unitaires et feature — significativement plus rapide que MySQL.
+### 13.3 Configuration SQLite pour Tests
 
 ```xml
 <!-- phpunit.xml -->
 <env name="DB_CONNECTION" value="sqlite"/>
 <env name="DB_DATABASE" value=":memory:"/>
+<env name="QUEUE_CONNECTION" value="sync"/>
+<env name="MAIL_MAILER" value="array"/>
+<env name="CACHE_STORE" value="array"/>
 ```
 
 ---
 
-## 8. Performance & Optimisation
+## 14. Performance & Optimisation
 
-### 8.1 Cache Laravel
+### 14.1 Cache Laravel
 
 ```bash
 php artisan config:cache    # Staging et production
@@ -446,23 +969,23 @@ php artisan event:cache     # Staging et production
 php artisan optimize        # Tout en une commande
 ```
 
-Opcache PHP (`php.ini`) :
 ```ini
+; php.ini — Opcache production
 opcache.enable=1
 opcache.memory_consumption=256
 opcache.max_accelerated_files=20000
-opcache.validate_timestamps=0   ; 0 en production uniquement
+opcache.validate_timestamps=0
 ```
 
-### 8.2 Optimisations Base de Données
+### 14.2 Optimisations Base de Données
 
 ```php
-// Eager loading systématique — éviter N+1
+// Eager loading — éviter N+1
 Product::with(['category', 'images', 'reviews', 'tags'])->paginate(20);
 
-// Query scopes réutilisables
-public function scopeActive($query) { return $query->where('status', 'active'); }
-public function scopeFeatured($query) { return $query->where('featured', true); }
+// Scopes réutilisables
+public function scopeActive($q) { return $q->where('status', 'active'); }
+public function scopeFeatured($q) { return $q->where('featured', true); }
 
 // Indexes dans les migrations
 $table->string('slug')->unique()->index();
@@ -470,105 +993,155 @@ $table->string('status')->index();
 $table->foreignId('user_id')->index()->constrained();
 ```
 
-### 8.3 Assets & Images
+### 14.3 Assets & Images
 
-- **Vite :** minification et tree-shaking automatiques en production
-- **Images :** Intervention Image → resize + conversion WebP avant stockage
+- **Vite :** minification + tree-shaking automatiques en production
+- **Intervention Image :** resize + conversion WebP avant stockage
 - **Lazy loading :** `loading="lazy"` sur toutes les images produit
-- **CDN :** Cloudflare en frontal pour assets statiques (optionnel)
+- **CDN :** Cloudflare en frontal pour assets statiques
 
 ---
 
-## 9. Monitoring & Logs
+## 15. SEO & Sitemap
+
+### 15.1 Meta Tags Dynamiques (spatie/laravel-seo)
+
+```php
+// Dans le controller produit
+seo()
+    ->title($product->meta_title ?? $product->name)
+    ->description($product->meta_description ?? Str::limit($product->description, 160))
+    ->image($product->primaryImage?->url)
+    ->canonical(route('products.show', $product->slug));
+```
+
+### 15.2 Génération Sitemap (spatie/laravel-sitemap)
+
+```php
+// app/Console/Commands/GenerateSitemap.php
+Sitemap::create()
+    ->add(Url::create('/'))
+    ->add(Url::create('/products'))
+    ->add(
+        Product::active()->get()->map(fn($p) =>
+            Url::create(route('products.show', $p->slug))
+                ->setLastModificationDate($p->updated_at)
+                ->setPriority(0.8)
+        )
+    )
+    ->add(
+        Category::all()->map(fn($c) =>
+            Url::create(route('categories.show', $c->slug))
+                ->setPriority(0.6)
+        )
+    )
+    ->writeToFile(public_path('sitemap.xml'));
+```
+
+### 15.3 Fichiers SEO
+
+```
+public/
+├── sitemap.xml         # Généré automatiquement (cron nuit)
+├── robots.txt          # Directives crawlers
+└── favicon.ico
+```
+
+```
+# robots.txt
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Sitemap: https://monshop.com/sitemap.xml
+```
+
+---
+
+## 16. Monitoring & Logs
 
 | Outil | Usage | Environnement |
 |-------|-------|---------------|
 | Laravel Telescope | Debug requests, queries, jobs, mails | Développement uniquement |
-| Laravel Horizon | Dashboard queues Redis, failed jobs | Dev + Production |
-| Sentry | Error tracking avec alertes email/Slack | Staging + Production |
-| UptimeRobot | Monitoring disponibilité (ping `/health`) | Production |
+| Laravel Horizon | Dashboard queues, failed jobs, throughput | Dev + Production |
+| Sentry | Error tracking avec alertes | Staging + Production |
+| UptimeRobot | Monitoring disponibilité ping `/health` | Production |
 | Laravel Logs | Logs applicatifs (stack: daily) | Tous environnements |
 | Laravel Debugbar | Profiling SQL, temps réponse, mémoire | Développement uniquement |
 
 ### Endpoint `/health`
 
 ```php
-// routes/web.php
 Route::get('/health', function () {
     return response()->json([
         'status'   => 'ok',
         'database' => DB::connection()->getPdo() ? 'ok' : 'error',
         'redis'    => Cache::store('redis')->ping() ? 'ok' : 'error',
         'storage'  => Storage::disk('local')->exists('.gitignore') ? 'ok' : 'error',
+        'queue'    => Queue::size() !== null ? 'ok' : 'error',
     ]);
 });
 ```
 
 ---
 
-## 10. Workflow de Développement
+## 17. Workflow de Développement
 
-### 10.1 Démarrage Local
+### 17.1 Démarrage Local
 
 ```bash
-# 1. Cloner le projet
 git clone <repo-url> && cd <projet>
-
-# 2. Démarrer les conteneurs
 docker compose up -d
-
-# 3. Installer les dépendances
 docker compose exec app composer install
 docker compose exec app npm install && npm run dev
-
-# 4. Configurer l'environnement
 cp .env.example .env
 docker compose exec app php artisan key:generate
-
-# 5. Base de données + données de démo
 docker compose exec app php artisan migrate --seed
-
-# 6. Accéder à l'application
-open http://localhost        # Application
-open http://localhost:8025   # Mailpit (emails)
-open http://localhost/horizon # Horizon (queues)
 ```
 
-### 10.2 Flux de Déploiement
+| URL | Service |
+|-----|---------|
+| http://localhost | Application principale |
+| http://localhost/admin | Panel FilamentPHP |
+| http://localhost:8025 | Mailpit (emails dev) |
+| http://localhost/horizon | Horizon (queues) |
+| http://localhost/telescope | Telescope (debug) |
+
+### 17.2 Flux de Déploiement
 
 ```
-git commit -m "feat: description claire"
-git push origin feature/nom-fonctionnalite
+git commit -m "feat: description"
+git push origin feature/nom
         ↓
-[Bitbucket] Pipeline CI déclenché
-  → Build + Tests + PHPStan + SonarQube
+Pipeline CI : Build → Tests → PHPStan → SonarQube
         ↓
 Pull Request → Code Review
         ↓
-Merge vers develop → Deploy auto STAGING
+Merge develop → Deploy STAGING (auto)
         ↓
-Validation QA sur staging
+Validation QA
         ↓
-Merge vers main → Deploy PROD (manuel)
+Merge main → Deploy PROD (manuel)
   → php artisan migrate --force
   → php artisan optimize
-  → Health check /health
+  → GET /health → 200 OK 
 ```
 
-### 10.3 Convention de Commits
+### 17.3 Convention de Commits
 
 ```
-feat: ajout panier invité
-fix: correction calcul taxes TVA
-refactor: extraction service paiement
-test: couverture checkout complet
-docs: mise à jour README
-chore: upgrade dépendances
+feat:     Nouvelle fonctionnalité
+fix:      Correction de bug
+refactor: Refactorisation sans changement comportement
+test:     Ajout ou modification de tests
+docs:     Documentation uniquement
+chore:    Maintenance (dépendances, config)
+perf:     Amélioration performance
 ```
 
 ---
 
-## 11. Checklist de Démarrage
+## 18. Checklist de Démarrage
 
 ### Prérequis
 
@@ -576,58 +1149,63 @@ chore: upgrade dépendances
 - [ ] Composer 2.x installé
 - [ ] Node.js 20+ et npm installés
 - [ ] Git configuré (`user.name` et `user.email`)
-- [ ] Compte Bitbucket créé avec repository privé
+- [ ] Compte Bitbucket + repository privé créé
 - [ ] Compte Stripe créé (mode test activé)
 - [ ] Compte Sentry créé (optionnel)
-- [ ] Azure ou Render compte créé pour production (optionnel)
+- [ ] Stripe CLI installé (pour tests webhooks)
 
 ### Sprint 1 — Infrastructure
 
 - [ ] `docker-compose.yml` avec PHP, Nginx, MySQL, Redis, Mailpit
-- [ ] `Dockerfile` PHP 8.3-fpm + extensions requises
-- [ ] `.gitignore` Laravel configuré
+- [ ] `Dockerfile` PHP 8.3-fpm + extensions
 - [ ] `.env.example` complet avec toutes les variables
-- [ ] `README.md` avec instructions setup claires
-- [ ] `bitbucket-pipelines.yml` initial (build + test)
-- [ ] Premier pipeline sur Bitbucket
+- [ ] `README.md` avec instructions setup
+- [ ] `bitbucket-pipelines.yml` initial
+- [ ] Premier pipeline 
 
-### Sprint 2 — Authentification
+### Sprint 2 — Authentification & Rôles
 
-- [ ] Laravel Breeze installé (login, register, reset password)
-- [ ] Spatie Permission configuré (roles: `admin`, `customer`)
-- [ ] Seeders utilisateurs de démo (1 admin + 10 clients)
-- [ ] 2FA via Laravel Fortify (admin uniquement)
-- [ ] Tests auth (login, register, rôles, permissions)
+- [ ] Laravel Breeze installé
+- [ ] Spatie Permission + rôles `admin`, `manager`, `customer`
+- [ ] Seeder `RolesAndPermissionsSeeder` avec toutes les permissions
+- [ ] Seeders utilisateurs démo (1 admin + 1 manager + 10 clients)
+- [ ] 2FA via Fortify pour admin
+- [ ] Tests auth + permissions
 
-### Sprint 3 — Catalogue Produits
+### Sprint 3 — Catalogue & Admin
 
-- [ ] Models `Product`, `Category`, `Tag` avec relations Eloquent
-- [ ] Migrations avec soft deletes et indexes explicites
-- [ ] CRUD produits via FilamentPHP (interface admin)
-- [ ] Upload images avec Intervention Image (resize + WebP)
-- [ ] Seeders avec 50+ produits Faker réalistes
-- [ ] Pages : catalogue, liste produits, détail produit (Blade)
+- [ ] FilamentPHP installé + compte admin créé
+- [ ] Ressources Filament : `Product`, `Category`, `Order`, `Coupon`
+- [ ] Models avec relations, soft deletes, indexes
+- [ ] Migrations avec indexes explicites
+- [ ] Upload images + Intervention Image (resize + WebP)
+- [ ] Seeders 50+ produits Faker réalistes
+- [ ] Pages boutique : catalogue, liste, détail (Blade + Livewire)
+- [ ] SEO meta tags + sitemap
 
 ### Sprint 4 — Panier & Commandes
 
-- [ ] Panier invité (session_id) + connecté (DB)
-- [ ] Livewire composant panier réactif (ajout, retrait, quantité)
-- [ ] Checkout avec validation adresse (Form Request)
-- [ ] Gestion commandes + historique des statuts
-- [ ] Emails transactionnels (confirmation, expédition) via Queue
+- [ ] `CartService` — panier invité (session) + connecté (DB)
+- [ ] Composant Livewire panier réactif
+- [ ] Checkout avec `CheckoutRequest` (validation adresse)
+- [ ] `OrderService` — création + historique statuts
+- [ ] Events : `OrderPlaced` → email + décrément stock
+- [ ] Emails via Queue (Mailpit en dev)
+- [ ] Gestion coupons
 
 ### Sprint 5 — Paiement & Finition
 
-- [ ] Intégration Stripe Checkout (mode test uniquement)
-- [ ] Webhooks Stripe (`payment_intent.succeeded`, `charge.refunded`)
-- [ ] Panel admin FilamentPHP complet (commandes, produits, clients)
-- [ ] Tests E2E avec Laravel Dusk (parcours checkout complet)
-- [ ] SonarQube Quality Gate passé (coverage ≥ 70%)
+- [ ] Stripe Checkout (mode test)
+- [ ] Webhooks Stripe via Stripe CLI (local) + handler
+- [ ] `ProcessStripeWebhook` job — mise à jour statut commande
+- [ ] Tests E2E Dusk — parcours checkout complet
+- [ ] SonarQube Quality Gate ≥ 70% coverage
 - [ ] Déploiement staging fonctionnel et validé
+- [ ] Endpoint `/health` opérationnel
 
 ---
 
-## 12. Objectifs d'Apprentissage
+## 19. Objectifs d'Apprentissage
 
 | Compétence | Couvert par | Niveau cible |
 |-----------|-------------|-------------|
@@ -640,19 +1218,21 @@ chore: upgrade dépendances
 | Git (branches, rebase, hooks) | Workflow quotidien | Intermédiaire |
 | Bitbucket Pipelines (YAML, stages) | CI/CD complet | Débutant-Intermédiaire |
 | SonarQube (quality gates) | Analyse qualité | Débutant |
-| REST API + Sanctum | API mobile/SPA | Intermédiaire |
-| Auth/Authz (Breeze, Spatie) | Sécurité accès | Intermédiaire |
-| File uploads + Storage | Images produits | Intermédiaire |
+| REST API versionnée + Sanctum | API mobile/SPA | Intermédiaire |
+| Auth/Authz (Breeze, Spatie RBAC) | Sécurité accès | Intermédiaire |
+| FilamentPHP (panel admin) | Gestion back-office | Intermédiaire |
+| File uploads + Storage (S3) | Images produits | Intermédiaire |
 | Queues + Events + Notifications | Emails asynchrones | Intermédiaire |
 | Tests PHPUnit/Pest + Dusk | Couverture 70%+ | Intermédiaire |
 | Stripe + Webhooks | Paiement complet | Débutant-Intermédiaire |
 | Sécurité (CSRF, XSS, rate limit) | Middleware + config | Intermédiaire |
-| Performance (cache, eager load) | Optimisation requêtes | Intermédiaire |
-| Docker CI/CD + Registry | Build + deploy | Débutant-Intermédiaire |
+| SEO (meta tags, sitemap) | Spatie packages | Débutant |
+| Soft Deletes + Restore | Models + Filament | Intermédiaire |
+| Exception Handler JSON/Web | Gestion erreurs | Intermédiaire |
 
 ---
 
-## 13. Ressources
+## 20. Ressources
 
 | Ressource | URL |
 |-----------|-----|
@@ -662,17 +1242,20 @@ chore: upgrade dépendances
 | Spatie Packages | [spatie.be/docs](https://spatie.be/docs) |
 | TailwindCSS | [tailwindcss.com/docs](https://tailwindcss.com/docs) |
 | Stripe Docs | [stripe.com/docs](https://stripe.com/docs) |
+| Stripe CLI | [stripe.com/docs/stripe-cli](https://stripe.com/docs/stripe-cli) |
 | Pest PHP | [pestphp.com](https://pestphp.com) |
 | Docker Docs | [docs.docker.com](https://docs.docker.com) |
 | SonarQube Docs | [docs.sonarqube.org](https://docs.sonarqube.org) |
 | Bitbucket Pipelines | [support.atlassian.com](https://support.atlassian.com/bitbucket-cloud/docs/get-started-with-bitbucket-pipelines/) |
 | Intervention Image | [image.intervention.io](https://image.intervention.io) |
 | Laravel Horizon | [laravel.com/docs/horizon](https://laravel.com/docs/11.x/horizon) |
+| Laravel Telescope | [laravel.com/docs/telescope](https://laravel.com/docs/11.x/telescope) |
+| Meilisearch | [meilisearch.com/docs](https://www.meilisearch.com/docs) |
 
 ---
 
-> !** Ce projet te donnera une base solide pour développer des applications Laravel professionnelles, du code local jusqu'au déploiement en production avec CI/CD complet.
+> **Bon apprentissage !** Ce projet couvre l'intégralité du cycle de développement web professionnel avec Laravel — du code local jusqu'à la production.
 
 ---
 
-*E-Commerce Laravel Stack — v1.0 · 2026 · Projet d'apprentissage*
+*E-Commerce Laravel Stack — v3.0 · 2026 · Projet d'apprentissage*
